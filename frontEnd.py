@@ -1,13 +1,20 @@
 import os
+import main
+import fishtypes
 from flask import Flask, flash, request, redirect, url_for
 from werkzeug.utils import secure_filename
-
-UPLOAD_FOLDER = '/uploads'
+#cd /mnt/c/Users/Justin/Deskp/fish-finder/CSE-474-Fish-Finder--master/
+app = Flask(__name__)
+app.secret_key = 'super secret key'
+app.config['SESSION_TYPE'] = 'filesystem'
+UPLOAD_FOLDER = '/mnt/c/Users/Justin/Desktop/fish-finder/CSE-474-Fish-Finder--master/uploads'
+#UPLOAD_FOLDER = '~/uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+uploads_dir = os.path.join(app.instance_path, 'uploads')
 ALLOWED_EXTENSIONS = {'png','jpg','jpeg'}
 
-app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -26,10 +33,16 @@ def upload_file():
             flash('No selected file')
             return redirect(request.url)
         if file and allowed_file(file.filename):
+            print (str(os.path.join(app.config['UPLOAD_FOLDER'], filename)))
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            return redirect(url_for('uploaded_file',
-                                    filename=filename))
+            flash('File successfully uploaded')
+            file.stream.seek(0)
+            res = main(file.file)
+            flash(fishFunction(res))
+            return
+            #return redirect(url_for('uploaded_file',
+                                    #filename=filename))
     return '''
 
 
@@ -74,11 +87,11 @@ body, html {height: 100%}
 
     <!--submit form block-->
     <div class="boxed">
-      <form>
+      <form method=post>
         <label for="myfile">Click below to upload your fish photo:</label>
         <br>
         <br>
-        <input type="file" id="myfile" name="file">
+        <input type=file id="myfile" name="file">
         <input type=submit value=Upload>
       </form>
     </div>
@@ -92,3 +105,4 @@ body, html {height: 100%}
 
 </body>
 </html>
+'''
