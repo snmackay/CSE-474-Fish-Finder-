@@ -4,6 +4,7 @@ import urllib.request
 #from app import app
 from flask import Flask, flash, request, redirect, render_template
 from werkzeug.utils import secure_filename
+from backEnd import main
 
 from flask import Flask
 
@@ -16,75 +17,21 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 
 def allowed_file(filename):
+
 	return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/')
 def upload_form():
-	return '''
+	return render_template('index.html', variable=processFile())
 
-<!DOCTYPE html>
-<html>
-<title>Fish Finder</title>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway">
-
-<style>
-
-body,h1 {font-family: "Raleway", sans-serif}
-body, html {height: 100%}
-
-.bgimg {
-  background-image: url('https://garibaldicharters.com/wp-content/uploads/2016/07/water-background.jpg');
-  min-height: 100%;
-  background-position: center;
-  background-size: cover;
-}
-
-.boxed {
-  width: 300px;
-  background: rgba(50,50 ,75, 0.7);
-  border-radius: 5px;
-  padding: 50px;
-  margin: 20px;
-}
-</style>
-<body>
-
-<div class="bgimg w3-display-container w3-animate-opacity w3-text-white">
-
-  <!--Title block-->
-  <div class="w3-display-middle">
-    <h1 class="w3-jumbo w3-animate-top">Fish Finder</h1>
-    <hr class="w3-border-white" style="margin:auto;width:60%">
-    <br>
-
-    <!--submit form block-->
-    <div class="boxed">
-      <form method="post" action="/" enctype="multipart/form-data">
-	      <dl>
-	  		<p>
-	  			<input type="file" name="file" autocomplete="off" required>
-	  		</p>
-	      </dl>
-	      <p>
-	  		<input type="submit" value="Submit">
-	  	</p>
-		</form>
-    </div>
-
-  </div>
-
-  <div class="w3-display-bottomleft w3-padding-large w3-xlarge w3-text-white">
-      Sean Mackay, Benjamin Conomos, Justin Henderson
-  </div>
-</div>
-
-</body>
-</html>
-'''
-
+def processFile():
+    try:
+        fishName=main()
+        print(fishName)
+        return fishName
+        os.remove("fish.png")
+    except:
+        return ""
 
 @app.route('/', methods=['POST'])
 def upload_file():
@@ -99,12 +46,20 @@ def upload_file():
 			return redirect(request.url)
 		if file and allowed_file(file.filename):
 			filename = secure_filename(file.filename)
+			temp=filename.split(".")
+			temp[0]="fish"
+			filename=temp[0]+"."+temp[1]
 			file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 			flash('File successfully uploaded')
+			flash(processFile())
 			return redirect('/')
 		else:
-			flash('Allowed file types are txt, pdf, png, jpg, jpeg, gif')
+			flash('Allowed file types are png, jpg, jpeg')
 			return redirect(request.url)
+
+def show_index():
+    full_filename = os.path.join(app.config['UPLOAD_FOLDER'], 'fish.png')
+    return render_template("index.html", user_image = full_filename)
 
 if __name__ == "__main__":
     app.run(debug=True)
