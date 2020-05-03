@@ -1,51 +1,26 @@
 import os
-import main
-import fishtypes
-from flask import Flask, flash, request, redirect, url_for
+#import magic
+import urllib.request
+#from app import app
+from flask import Flask, flash, request, redirect, render_template
 from werkzeug.utils import secure_filename
-#cd /mnt/c/Users/Justin/Deskp/fish-finder/CSE-474-Fish-Finder--master/
+
+from flask import Flask
+
+UPLOAD_FOLDER = os.path.dirname(os.path.abspath(__file__))
+
 app = Flask(__name__)
-app.secret_key = 'super secret key'
-app.config['SESSION_TYPE'] = 'filesystem'
-UPLOAD_FOLDER = '/mnt/c/Users/Justin/Desktop/fish-finder/CSE-474-Fish-Finder--master/uploads'
-#UPLOAD_FOLDER = '~/uploads'
+app.secret_key = "secret key"
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-uploads_dir = os.path.join(app.instance_path, 'uploads')
-ALLOWED_EXTENSIONS = {'png','jpg','jpeg'}
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 
-
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+	return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@app.route('/', methods=['GET', 'POST'])
-def upload_file():
-    if request.method == 'POST':
-        # check if the post request has the file part
-        if 'file' not in request.files:
-            flash('No file part')
-            return redirect(request.url)
-        file = request.files['file']
-        # if user does not select file, browser also
-        # submit an empty part without filename
-        if file.filename == '':
-            flash('No selected file')
-            return redirect(request.url)
-        if file and allowed_file(file.filename):
-            print (str(os.path.join(app.config['UPLOAD_FOLDER'], filename)))
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            flash('File successfully uploaded')
-            file.stream.seek(0)
-            res = main(file.file)
-            flash(fishFunction(res))
-            return
-            #return redirect(url_for('uploaded_file',
-                                    #filename=filename))
-    return '''
-
-
+@app.route('/')
+def upload_form():
+	return '''
 
 <!DOCTYPE html>
 <html>
@@ -87,13 +62,16 @@ body, html {height: 100%}
 
     <!--submit form block-->
     <div class="boxed">
-      <form method=post>
-        <label for="myfile">Click below to upload your fish photo:</label>
-        <br>
-        <br>
-        <input type=file id="myfile" name="file">
-        <input type=submit value=Upload>
-      </form>
+      <form method="post" action="/" enctype="multipart/form-data">
+	      <dl>
+	  		<p>
+	  			<input type="file" name="file" autocomplete="off" required>
+	  		</p>
+	      </dl>
+	      <p>
+	  		<input type="submit" value="Submit">
+	  	</p>
+		</form>
     </div>
 
   </div>
@@ -106,3 +84,27 @@ body, html {height: 100%}
 </body>
 </html>
 '''
+
+
+@app.route('/', methods=['POST'])
+def upload_file():
+	if request.method == 'POST':
+        # check if the post request has the file part
+		if 'file' not in request.files:
+			flash('No file part')
+			return redirect(request.url)
+		file = request.files['file']
+		if file.filename == '':
+			flash('No file selected for uploading')
+			return redirect(request.url)
+		if file and allowed_file(file.filename):
+			filename = secure_filename(file.filename)
+			file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+			flash('File successfully uploaded')
+			return redirect('/')
+		else:
+			flash('Allowed file types are txt, pdf, png, jpg, jpeg, gif')
+			return redirect(request.url)
+
+if __name__ == "__main__":
+    app.run(debug=True)
